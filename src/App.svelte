@@ -1,47 +1,139 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import BoxList from './lib/BoxList.svelte';
+  import SpaceControl from './lib/SpaceControl.svelte';
+  import BoxControl from './lib/BoxControl.svelte';
+
+  import {boxState, boxMatches, type State} from './state.svelte';
+
+  let _searchTerm = $state("");
+  let searchTerm = $derived(_searchTerm.toLocaleLowerCase().trim());
+
+  let _searchBox = $state("");
+  let searchBox = $derived(parseInt(_searchBox))
+
+  let tab : "item" | "recent" | "box" = $state("item");
+
+  function nthMostRecent(boxState : State, n : number) : number {
+    let ret = [];
+    for (let key in boxState.spaces) {
+      for (let box of boxState.spaces[key]) {
+        ret.push(box.modificationTime);
+      }
+    }
+    ret.sort();
+    return ret[Math.max(0, ret.length - n)];
+  }
+  const numMostRecent = 5;
+  let modifiedCutoff = $derived(nthMostRecent(boxState, numMostRecent));
 </script>
 
 <main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
+  <div id="searches">
+    <div class="search-field">
+      <label for="search-item">Item:</label>
+      <input bind:value={_searchTerm} id="search-item" />
+    </div>
+    <div class="search-field">
+      <label for="searchBox">Box:</label>
+      <input bind:value={_searchBox} id="search-box" />
+    </div>
   </div>
 
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
+  <div id="tab-select">
+    <input bind:group={tab} type="radio" name="tab" value="item" id="r-item" />
+    <label for="r-item">Search</label>
+    <input bind:group={tab} type="radio" name="tab" value="recent" id="r-recent" />
+    <label for="r-recent">Recent</label>
+    <input bind:group={tab} type="radio" name="tab" value="box" id="r-box" />
+    <label for="r-box">Box</label>
+  </div>
 
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+  <div id="columns">
+    <div class={tab == "item" ? "selected" : null}>
+      <div class="col-header">Item search</div>
+      <BoxList content={boxState.spaces} highlight={searchTerm} filter={b => boxMatches(b, searchTerm)} />
+    </div>
+    <div class={tab == "recent" ? "selected" : null}>
+      <div class="col-header">Recent boxes</div>
+      <BoxList content={boxState.spaces} highlight={searchTerm} filter={b => b.modificationTime >= modifiedCutoff} />
+    </div>
+    <div class={tab == "box" ? "selected" : null}>
+      <div class="col-header">Box search</div>
+      <BoxList content={boxState.spaces} highlight={searchTerm} filter={b => Number.isNaN(searchBox) || b.idx + 1 === searchBox} />
+    </div>
+  </div>
+
+  <div id="controls">
+    <SpaceControl {boxState}/>
+    <BoxControl {boxState}/>
+  </div>
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
+  #columns {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
   }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
+  #columns > div {
+    padding: 5px;
+    background-color: #282828;
+    border-radius: 5px;
+    flex-grow: 1;
+    flex-basis: 0px;
+    max-width: 400px;
   }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
+  #searches {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 5px;
+    background-color: #282828;
+    border-radius: 5px;
+    max-width: 600px;
+    flex-grow: 1;
   }
-  .read-the-docs {
-    color: #888;
+  #controls {
+    display: flex;
+    justify-content: space-around;
+    max-width: 1000px;
+    border-radius: 5px;
+    background-color: #282828;
+    padding: 5px;
+  }
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 20px;
+  }
+  .col-header {
+    margin-top: 5px;
+    margin-bottom: 9px;
+  }
+  main > div {
+    width: 100%;
+  }
+  #tab-select {
+    display: none;
+  }
+
+  @media (max-width: 700px) {
+    #tab-select {
+      display: block;
+    }
+    #columns > div:not(.selected) {
+      display: none;
+    }
+    #searches,#controls {
+      flex-direction: column;
+      max-width: 300px;
+    }
+    .col-header {
+      display: none;
+    }
   }
 </style>
