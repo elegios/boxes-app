@@ -36,7 +36,6 @@
     devShells.x86_64-linux.default = pkgs.mkShell {
       name = "dev shell";
       buildInputs = [
-        pkgs.yarn
         pkgs.svelte-language-server
       ];
       inputsFrom = [ pkg ];

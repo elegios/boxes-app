@@ -3,7 +3,15 @@
   import SpaceControl from './lib/SpaceControl.svelte';
   import BoxControl from './lib/BoxControl.svelte';
 
-  import {boxState, boxMatches, type State} from './state.svelte';
+  import type {State} from './state.svelte';
+  import {boxMatches} from './state.svelte';
+
+  import {RemoteState} from './network.svelte';
+
+  let remoteState = new RemoteState(window.location.href);
+  remoteState.fetchState();
+
+  $effect(remoteState.maybePushUpdate);
 
   let _searchTerm = $state("");
   let searchTerm = $derived(_searchTerm.toLocaleLowerCase().trim());
@@ -24,10 +32,15 @@
     return ret[Math.max(0, ret.length - n)];
   }
   const numMostRecent = 5;
-  let modifiedCutoff = $derived(nthMostRecent(boxState, numMostRecent));
+  let modifiedCutoff = $derived(nthMostRecent(remoteState.state, numMostRecent));
 </script>
 
 <main>
+  {#if remoteState.error}
+  <div id="error">
+    {remoteState.error}
+  </div>
+  {/if}
   <div id="searches">
     <div class="search-field">
       <label for="search-item">Item:</label>
@@ -51,21 +64,21 @@
   <div id="columns">
     <div class={tab == "item" ? "selected" : null}>
       <div class="col-header">Item search</div>
-      <BoxList content={boxState.spaces} highlight={searchTerm} filter={b => boxMatches(b, searchTerm)} />
+      <BoxList content={remoteState.state.spaces} highlight={searchTerm} filter={b => boxMatches(b, searchTerm)} />
     </div>
     <div class={tab == "recent" ? "selected" : null}>
       <div class="col-header">Recent boxes</div>
-      <BoxList content={boxState.spaces} highlight={searchTerm} filter={b => b.modificationTime >= modifiedCutoff} />
+      <BoxList content={remoteState.state.spaces} highlight={searchTerm} filter={b => b.modificationTime >= modifiedCutoff} />
     </div>
     <div class={tab == "box" ? "selected" : null}>
       <div class="col-header">Box search</div>
-      <BoxList content={boxState.spaces} highlight={searchTerm} filter={b => Number.isNaN(searchBox) || b.idx + 1 === searchBox} />
+      <BoxList content={remoteState.state.spaces} highlight={searchTerm} filter={b => Number.isNaN(searchBox) || b.idx + 1 === searchBox} />
     </div>
   </div>
 
   <div id="controls">
-    <SpaceControl {boxState}/>
-    <BoxControl {boxState}/>
+    <SpaceControl boxState={remoteState.state}/>
+    <BoxControl boxState={remoteState.state}/>
   </div>
 </main>
 

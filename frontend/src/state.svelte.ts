@@ -10,21 +10,6 @@ export type State = {
   };
 };
 
-export let boxState : State = $state({
-  spaces : {
-    // "blub" : [
-    //   {idx : 0, items: [], modificationTime: Date.now()},
-    //   {idx : 1, items: ["some stuff"], modificationTime: Date.now()},
-    //   {idx : 2, items: ["some stuff", "and more"], modificationTime: Date.now()},
-    // ],
-    // "blab" : [
-    //   {idx : 0, items: [], modificationTime: Date.now()},
-    //   {idx : 1, items: ["some staff"], modificationTime: Date.now()},
-    //   {idx : 2, items: ["some staff", "and mare"], modificationTime: Date.now()},
-    // ],
-  },
-});
-
 export function itemMatches(item : string, highlight? : string) : boolean {
   return !!highlight && item.toLocaleLowerCase().includes(highlight);
 }
@@ -43,5 +28,3 @@ export function exactMatchIdx(box : BoxState, highlight : string) : number | und
     return undefined;
   return idx;
 }
-
-export default boxState;
