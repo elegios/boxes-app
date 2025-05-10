@@ -17,7 +17,7 @@
     pkg = pkgs.stdenv.mkDerivation (finalAttrs: {
       pname = "boxes";
       version = "v1";
-      src = ./.;
+      src = ./frontend;
 
       yarnOfflineCache = pkgs.fetchYarnDeps {
         yarnLock = finalAttrs.src + "/yarn.lock";
