@@ -14,7 +14,7 @@
   }:
   let
     pkgs = nixpkgs.legacyPackages.x86_64-linux.pkgs;
-    pkg = pkgs.stdenv.mkDerivation (finalAttrs: {
+    frontend = pkgs.stdenv.mkDerivation (finalAttrs: {
       pname = "boxes";
       version = "v1";
       src = ./frontend;
@@ -31,14 +31,29 @@
         pkgs.nodejs
       ];
     });
+    backend = pkgs.buildGoModule {
+      pname = "backend";
+      version = "v1";
+      src = ./backend;
+
+      vendorHash = null;
+    };
+    wbackend = pkgs.runCommand "mkBackend" {buildInputs = [pkgs.makeWrapper];} ''
+      mkdir -p $out/bin
+      makeWrapper ${backend}/bin/boxes-app $out/bin/boxes-app \
+        --add-flags "-s ${frontend}/lib/node_modules/boxes-app/dist"
+    '';
   in {
-    packages.x86_64-linux.default = pkg;
+    packages.x86_64-linux.frontend = frontend;
+    packages.x86_64-linux.backend = backend;
+    packages.x86_64-linux.wbackend = wbackend;
     devShells.x86_64-linux.default = pkgs.mkShell {
       name = "dev shell";
       buildInputs = [
         pkgs.svelte-language-server
+        pkgs.gopls
       ];
-      inputsFrom = [ pkg ];
+      inputsFrom = [ frontend backend ];
     };
   };
 }
