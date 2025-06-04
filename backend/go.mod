@@ -1,3 +1,3 @@
 module github.com/elegios/boxes-app
 
-go 1.24.3
+go 1.23.6

@@ -2,51 +2,19 @@
   description = "Stuff";
 
   inputs = {
-    # dream2nix.url = "github:nix-community/dream2nix";
-    # nixpkgs.follows = "dream2nix/nixpkgs";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
   outputs = {
     self,
-    # dream2nix,
     nixpkgs,
   }:
   let
     pkgs = nixpkgs.legacyPackages.x86_64-linux.pkgs;
-    frontend = pkgs.stdenv.mkDerivation (finalAttrs: {
-      pname = "boxes";
-      version = "v1";
-      src = ./frontend;
-
-      yarnOfflineCache = pkgs.fetchYarnDeps {
-        yarnLock = finalAttrs.src + "/yarn.lock";
-        hash = "sha256-N5guhlPO+tM+EsQpUgA0vLvTGNna1FqBGbE6bt1XJ4Q=";
-      };
-
-      nativeBuildInputs = [
-        pkgs.yarnConfigHook
-        pkgs.yarnBuildHook
-        pkgs.yarnInstallHook
-        pkgs.nodejs
-      ];
-    });
-    backend = pkgs.buildGoModule {
-      pname = "backend";
-      version = "v1";
-      src = ./backend;
-
-      vendorHash = null;
-    };
-    wbackend = pkgs.runCommand "mkBackend" {buildInputs = [pkgs.makeWrapper];} ''
-      mkdir -p $out/bin
-      makeWrapper ${backend}/bin/boxes-app $out/bin/boxes-app \
-        --add-flags "-s ${frontend}/lib/node_modules/boxes-app/dist"
-    '';
+    frontend = pkgs.callPackage ./frontend.nix {};
+    backend = pkgs.callPackage ./backend.nix {};
   in {
-    packages.x86_64-linux.frontend = frontend;
-    packages.x86_64-linux.backend = backend;
-    packages.x86_64-linux.wbackend = wbackend;
+    nixosModules.default = ./module.nix;
     devShells.x86_64-linux.default = pkgs.mkShell {
       name = "dev shell";
       buildInputs = [
